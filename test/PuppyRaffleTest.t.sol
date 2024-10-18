@@ -16,11 +16,7 @@ contract PuppyRaffleTest is Test {
     uint256 duration = 1 days;
 
     function setUp() public {
-        puppyRaffle = new PuppyRaffle(
-            entranceFee,
-            feeAddress,
-            duration
-        );
+        puppyRaffle = new PuppyRaffle(entranceFee, feeAddress, duration);
     }
 
     //////////////////////
@@ -212,5 +208,48 @@ contract PuppyRaffleTest is Test {
         puppyRaffle.selectWinner();
         puppyRaffle.withdrawFees();
         assertEq(address(feeAddress).balance, expectedPrizeAmount);
+    }
+
+    ////////////////////
+    /// AUDIT /////////
+    ///////////////////
+
+    function test_denialOfService() public {
+        /*         address[] memory players = new address[](1);
+        players[0] = playerOne;
+        puppyRaffle.enterRaffle{value: entranceFee}(players);
+        assertEq(puppyRaffle.players(0), playerOne); */
+
+        vm.txGasPrice(1);
+        // Enter 100 players
+        uint256 playersNum = 100;
+        address[] memory players = new address[](playersNum);
+        for (uint256 i = 0; i < playersNum; i++) {
+            players[i] = address(i);
+        }
+
+        // check gas costs
+        uint256 gasStart = gasleft();
+        puppyRaffle.enterRaffle{value: entranceFee * players.length}(players);
+        uint256 gasEnd = gasleft();
+
+        uint256 gasUsedFirst = (gasStart - gasEnd) * tx.gasprice;
+        console.log("Gas used for first 100 players", gasUsedFirst);
+
+        // Enter more players
+        address[] memory playersTwo = new address[](playersNum);
+        for (uint256 i = 0; i < playersNum; i++) {
+            playersTwo[i] = address(i + playersNum);
+        }
+
+        // check gas costs
+        uint256 gasStart2 = gasleft();
+        puppyRaffle.enterRaffle{value: entranceFee * playersTwo.length}(playersTwo);
+        uint256 gasEnd2 = gasleft();
+
+        uint256 gasUsedSecond = (gasStart2 - gasEnd2) * tx.gasprice;
+        console.log("Gas used for second 100 players", gasUsedSecond);
+
+        assert(gasUsedFirst < gasUsedSecond);
     }
 }

@@ -76,6 +76,8 @@ contract PuppyRaffle is ERC721, Ownable {
     /// @notice they have to pay the entrance fee * the number of players
     /// @notice duplicate entrants are not allowed
     /// @param newPlayers the list of players to enter the raffle
+
+    // @audit DoS attack
     function enterRaffle(address[] memory newPlayers) public payable {
         require(msg.value == entranceFee * newPlayers.length, "PuppyRaffle: Must send enough to enter raffle");
         for (uint256 i = 0; i < newPlayers.length; i++) {
@@ -99,7 +101,7 @@ contract PuppyRaffle is ERC721, Ownable {
         require(playerAddress != address(0), "PuppyRaffle: Player already refunded, or is not active");
 
         payable(msg.sender).sendValue(entranceFee);
-
+        // @audit violates CEI pattern; reentrancy vulnerability
         players[playerIndex] = address(0);
         emit RaffleRefunded(playerAddress);
     }
@@ -113,6 +115,7 @@ contract PuppyRaffle is ERC721, Ownable {
                 return i;
             }
         }
+        // @audit If the player is at index 0, it´ll return index 0 and a player might think they are not active.
         return 0;
     }
 
