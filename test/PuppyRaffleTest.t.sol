@@ -278,6 +278,15 @@ contract PuppyRaffleTest is Test {
         console.log("Ending Attacker contract balance", address(attackerContract).balance);
         console.log("Ending contract balance", address(puppyRaffle).balance);
     }
+
+    function test_cantSendMoneyToRaffle() public {
+        address sender = makeAddr("sender");
+        vm.deal(sender, 1 ether);
+        vm.expectRevert();
+        vm.prank(sender);
+        (bool success,) = payable(address(puppyRaffle)).call{value: 1 ether}("");
+        require(success);
+    }
 }
 
 contract Attacker {
